@@ -1,0 +1,62 @@
+[
+  {
+    "id": "merch_001",
+    "businessName": "Apex Electronics",
+    "category": "Retail",
+    "email": "support@apex.store"
+  },
+  {
+    "id": "merch_002",
+    "businessName": "CloudPulse SaaS",
+    "category": "SaaS",
+    "email": "support@cloudpulse.io"
+  },
+  {
+    "id": "merch_003",
+    "businessName": "Urban Roast Cafe",
+    "category": "Dining",
+    "email": "hello@urbanroast.cafe"
+  },
+  {
+    "id": "merch_004",
+    "businessName": "Zenith Airlines",
+    "category": "Travel",
+    "email": "support@zenith.air"
+  },
+  {
+    "id": "merch_005",
+    "businessName": "Nexus Gaming",
+    "category": "Digital Goods",
+    "email": "hi@nexusgaming.gg"
+  },
+  {
+    "id": "merch_006",
+    "businessName": "Lumina Home",
+    "category": "Retail",
+    "email": "care@luminahome.com"
+  },
+  {
+    "id": "merch_007",
+    "businessName": "BioVital Health",
+    "category": "Healthcare",
+    "email": "help@biovital.health"
+  },
+  {
+    "id": "merch_008",
+    "businessName": "GreenRoots Market",
+    "category": "Grocery",
+    "email": "hello@greenroots.market"
+  },
+  {
+    "id": "merch_009",
+    "businessName": "Atlas Car Rental",
+    "category": "Travel",
+    "email": "fleet@atlascars.com"
+  },
+  {
+    "id": "merch_010",
+    "businessName": "Starlight Cinema",
+    "category": "Entertainment",
+    "email": "tickets@starlight.cinema"
+  }
+]

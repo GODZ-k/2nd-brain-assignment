@@ -1,0 +1,49 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Customer {
+  id        String   @id
+  name      String
+  email     String   @unique
+  phone     String
+  createdAt DateTime @default(now())
+
+  transactions Transaction[]
+
+  @@map("customers")
+}
+
+model Merchant {
+  id           String   @id
+  businessName String   @unique
+  category     String
+  email        String   @unique
+  createdAt    DateTime @default(now())
+
+  transactions Transaction[]
+
+  @@map("merchants")
+}
+
+model Transaction {
+  id         String   @id
+  customerId String
+  merchantId String
+  amount     Float
+  currency   String
+  status     String // COMPLETED | PENDING | DECLINED
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+
+  @@index([customerId])
+  @@index([merchantId])
+  @@map("transactions")
+}

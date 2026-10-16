@@ -1,5 +1,7 @@
 import { CallerContext, TransactionFilters, TransactionStatus } from '@/types';
 import { getPrismaClient } from '@/graph/client';
+import { AuditService } from '@/core/audit.service';
+import { AccessControlService } from '@/core/access-control.service';
 
 const TRANSACTION_STATUSES: TransactionStatus[] = ['COMPLETED', 'PENDING', 'DECLINED'];
 
@@ -10,28 +12,83 @@ export class GraphRepository {
    * - merchant: only if that customer has transacted at their store
    * - admin: any customer
    */
-  static async getCustomer(customerId: string, ctx: CallerContext) {
+  static async getCustomer(customerId: string, ctx: CallerContext, toolName: string = "get_customer") {
     const prisma = getPrismaClient();
 
-    if (ctx.role === 'customer') {
-      if (ctx.callerId !== customerId) {
-        return { error: 'Access denied: you can only view your own profile.' };
-      }
-    }
+    let hasTransactionWithMerchant = false;
 
     if (ctx.role === 'merchant') {
       // check if this customer has ever transacted at this merchant's store
       const txn = await prisma.transaction.findFirst({
         where: { merchantId: ctx.callerId, customerId },
+        select: { id: true }
       });
-      if (!txn) {
-        return { error: 'Access denied: this customer has not transacted at your store.' };
-      }
+
+      hasTransactionWithMerchant = !!txn;
+
     }
 
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
-    if (!customer) return { error: 'Customer not found.' };
-    return { data: customer };
+    const decision = AccessControlService.canReadCustomer(ctx, customerId, hasTransactionWithMerchant);
+
+    if (!decision.allowed) {
+      await AuditService.log({
+        callerId: ctx.callerId!,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: "Customer",
+        resourceId: customerId,
+        decision: 'DENIED',
+        reason: decision.reason,
+        toolName,
+      });
+      return { error: "Access Denied." };
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+
+    if (!customer) {
+      await AuditService.log({
+        callerId: ctx.callerId!,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: "Customer",
+        resourceId: customerId,
+        decision: 'DENIED',
+        reason: 'Customer not found.',
+        toolName,
+      });
+      return { error: 'Customer not found.' };
+    }
+
+    const fields =
+      AccessControlService.customerFields(ctx);
+
+    const data = this.pickFields(customer, fields.allowed);
+
+    await AuditService.log({
+      callerId: ctx.callerId!,
+      callerRole: ctx.role,
+      action: "READ",
+      resourceType: 'Customer',
+      resourceId: customerId,
+      decision: 'ALLOWED',
+      reason: decision.reason,
+      toolName,
+      fields,
+    });
+
+    return {
+      data,
+    };
   }
 
   /**
@@ -40,37 +97,81 @@ export class GraphRepository {
    * - merchant: only their own full profile
    * - admin: any merchant full profile
    */
-  static async getMerchant(merchantId: string, ctx: CallerContext) {
+
+  static async getMerchant(merchantId: string, ctx: CallerContext, toolName: string = "get_merchant") {
     const prisma = getPrismaClient();
 
-    const merchant = await prisma.merchant.findUnique({ where: { id: merchantId } });
-    if (!merchant) return { error: 'Merchant not found.' };
+    const merchant = await prisma.merchant.findUnique({
+      where: { id: merchantId }, select: {
+        id: true,
+        businessName: true,
+        category: true,
+        email: true,
+        createdAt: true,
+      },
+    });
 
-    if (ctx.role === 'merchant' && ctx.callerId !== merchantId) {
-      // Can see public info only
-      return {
-        data: {
-          id: merchant.id,
-          businessName: merchant.businessName,
-          category: merchant.category,
-          email: merchant.email,
-        },
-      };
+    if (!merchant) {
+      await AuditService.log({
+        callerId: ctx.callerId as string,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: "Merchant",
+        resourceId: merchantId,
+        decision: 'DENIED',
+        reason: 'Merchant not found.',
+        toolName,
+      });
+      return { error: 'Merchant not found.' };
     }
 
-    if (ctx.role === 'customer') {
-      // Customers see public merchant directory
-      return {
-        data: {
-          id: merchant.id,
-          businessName: merchant.businessName,
-          category: merchant.category,
-          email: merchant.email,
-        },
-      };
+    const decision =
+      AccessControlService.canReadMerchant(
+        ctx,
+        merchantId,
+      );
+
+    if (!decision.allowed) {
+      await AuditService.log({
+        callerId: ctx.callerId!,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: "Merchant",
+        resourceId: merchantId,
+        decision: 'DENIED',
+        reason: decision.reason,
+        toolName,
+      });
+      return { error: 'Access Denied.' };
     }
 
-    return { data: merchant };
+    const fields =
+      AccessControlService.merchantFields(
+        ctx,
+        ctx.role === 'merchant' &&
+        ctx.callerId === merchantId,
+      );
+
+
+    const data = this.pickFields(
+      merchant,
+      fields.allowed,
+    );
+
+    await AuditService.log({
+      callerId: ctx.callerId!,
+      callerRole: ctx.role,
+      action: 'READ',
+      resourceType: 'Merchant',
+      resourceId: merchantId,
+      decision: 'ALLOWED',
+      reason: decision.reason,
+      toolName,
+      fields,
+    });
+
+
+    return { data };
   }
 
   /**
@@ -79,7 +180,7 @@ export class GraphRepository {
    * - merchant: only transactions at their store
    * - admin: any transaction
    */
-  static async getTransaction(transactionId: string, ctx: CallerContext) {
+  static async getTransaction(transactionId: string, ctx: CallerContext, toolName: string = "get_transaction") {
     const prisma = getPrismaClient();
 
     const txn = await prisma.transaction.findUnique({
@@ -90,17 +191,64 @@ export class GraphRepository {
       },
     });
 
-    if (!txn) return { error: 'Transaction not found.' };
+    if (!txn) {
+      await AuditService.log({
+        callerId: ctx.callerId as string,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: 'Transaction',
+        resourceId: transactionId,
+        decision: 'DENIED',
+        reason: 'Transaction not found',
+        toolName,
+      });
 
-    if (ctx.role === 'customer' && txn.customerId !== ctx.callerId) {
-      return { error: 'Access denied: you can only view your own transactions.' };
+      return {
+        error: 'Transaction not found.',
+      };
     }
 
-    if (ctx.role === 'merchant' && txn.merchantId !== ctx.callerId) {
-      return { error: 'Access denied: this transaction was not processed at your store.' };
+    const decision =
+      AccessControlService.canReadTransaction(
+        ctx,
+        txn,
+      );
+
+    if (!decision.allowed) {
+      await AuditService.log({
+        callerId: ctx.callerId as string,
+        callerRole: ctx.role,
+        action: 'READ',
+        resourceType: 'Transaction',
+        resourceId: transactionId,
+        decision: 'DENIED',
+        reason: decision.reason,
+        toolName,
+      });
+      return { error: "Access Denied." };
     }
 
-    return { data: txn };
+    const fields =
+      AccessControlService.transactionFields(ctx);
+
+    const data = this.pickFields(
+      txn,
+      fields.allowed,
+    );
+
+    await AuditService.log({
+      callerId: ctx.callerId!,
+      callerRole: ctx.role,
+      action: 'READ',
+      resourceType: 'Transaction',
+      resourceId: transactionId,
+      decision: 'ALLOWED',
+      reason: decision.reason,
+      toolName,
+      fields,
+    });
+
+    return { data };
   }
 
   /**
@@ -112,7 +260,8 @@ export class GraphRepository {
    */
   static async listTransactions(
     ctx: CallerContext,
-    filters?: TransactionFilters
+    filters?: TransactionFilters,
+    toolName: string = "list_transactions"
   ) {
     const prisma = getPrismaClient();
 
@@ -120,6 +269,19 @@ export class GraphRepository {
 
     if (filters?.status) {
       if (!TRANSACTION_STATUSES.includes(filters.status)) {
+        await AuditService.log({
+          callerId: ctx.callerId as string,
+          callerRole: ctx.role,
+          action: 'LIST',
+          resourceType: 'Transaction',
+          resourceId: filters.customerId || filters.merchantId,
+          decision: 'DENIED',
+          reason: 'Invalid status. Use COMPLETED, PENDING, or DECLINED.',
+          toolName,
+          metadata: {
+            filters
+          }
+        });
         return { error: 'Invalid status. Use COMPLETED, PENDING, or DECLINED.' };
       }
       where.status = filters.status;
@@ -145,7 +307,33 @@ export class GraphRepository {
       take: 50,
     });
 
-    return { data: txns, count: txns.length };
+    const fields =
+      AccessControlService.transactionFields(ctx);
+
+    const data = txns.map((txn) =>
+      this.pickFields(txn, fields.allowed),
+    )
+
+    await AuditService.log({
+      callerId: ctx.callerId!,
+      callerRole: ctx.role,
+      action: 'LIST',
+      resourceType: 'Transaction',
+      resourceId: filters?.customerId || filters?.merchantId,
+      decision: 'ALLOWED',
+      reason:
+        ctx.role === 'admin'
+          ? 'Admin transaction listing.'
+          : 'Transaction listing restricted to caller scope.',
+      toolName,
+      fields,
+      metadata: {
+        filters,
+        returnedCount: data.length,
+      }
+    });
+
+    return { data, count: txns.length };
   }
 
   /**
@@ -154,29 +342,111 @@ export class GraphRepository {
    * - merchant: only customers who bought at their store
    * - admin: all customers
    */
-  static async listCustomers(ctx: CallerContext) {
+  static async listCustomers(ctx: CallerContext, toolName: string = "list_customers") {
     const prisma = getPrismaClient();
 
-    if (ctx.role === 'customer') {
-      const customer = await prisma.customer.findUnique({ where: { id: ctx.callerId } });
-      return { data: customer ? [customer] : [], count: 1 };
-    }
+    let customers;
 
-    if (ctx.role === 'merchant') {
+    if (ctx.role === 'customer') {
+      const customer = await prisma.customer.findUnique({
+        where: { id: ctx.callerId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+        },
+      });
+
+      customers =
+        customer
+          ? [customer]
+          : [];
+    } else if (ctx.role === 'merchant') {
       const txns = await prisma.transaction.findMany({
         where: { merchantId: ctx.callerId },
         select: { customerId: true },
         distinct: ['customerId'],
       });
       const customerIds = txns.map((t) => t.customerId);
-      const customers = await prisma.customer.findMany({
-        where: { id: { in: customerIds } },
+      customers = await prisma.customer.findMany({
+        where: {
+          id: { in: customerIds },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+        },
       });
-      return { data: customers, count: customers.length };
+    } else {
+      // admin
+      customers = await prisma.customer.findMany({
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+        },
+      });
     }
 
-    // admin
-    const customers = await prisma.customer.findMany({ orderBy: { createdAt: 'desc' } });
-    return { data: customers, count: customers.length };
+    const fields =
+      AccessControlService.customerFields(ctx);
+
+    const data = customers.map((customer) =>
+      this.pickFields(customer, fields.allowed),
+    );
+
+    await AuditService.log({
+      callerId: ctx.callerId!,
+      callerRole: ctx.role,
+      action: 'LIST',
+      resourceType: 'Customer',
+      resourceId: ctx.callerId,
+      decision: 'ALLOWED',
+      reason:
+        ctx.role === 'admin'
+          ? 'Admin customer listing.'
+          : 'Customer listing restricted to caller scope.',
+      toolName,
+      fields,
+      metadata: {
+        returnedCount: data.length,
+      }
+    });
+
+
+    return { data, count: customers.length };
+  };
+
+
+
+  private static pickFields<T extends object>(
+    object: T,
+    allowedFields: string[],
+  ) {
+    const result: Record<string, unknown> = {};
+
+    for (const field of allowedFields) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          object,
+          field,
+        )
+      ) {
+        result[field] =
+          (object as Record<string, unknown>)[
+          field
+          ];
+      }
+    }
+
+    return result;
   }
 }

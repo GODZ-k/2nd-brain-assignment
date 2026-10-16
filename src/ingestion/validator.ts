@@ -21,6 +21,7 @@ export const TransactionSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
   currency: z.string().length(3),
   status: z.enum(['COMPLETED', 'PENDING', 'DECLINED']),
+  internalNote: z.string().optional(),
   createdAt: z.string().refine((v) => !isNaN(Date.parse(v)), { message: 'Invalid date' }),
 });
 

@@ -1,11 +1,30 @@
-import { afterAll, describe, it, expect } from 'vitest';
+import { afterAll, describe, it, expect, beforeAll } from 'vitest';
 import { GraphRepository } from '@/graph/repository';
-import { disconnectPrisma } from '@/graph/client';
+import { disconnectPrisma, getPrismaClient } from '@/graph/client';
 import { CallerContext } from '@/types';
 
 const adminCtx: CallerContext = { role: 'admin', callerId: 'admin' };
 const customerCtx: CallerContext = { role: 'customer', callerId: 'cust_001' };
 const merchantCtx: CallerContext = { role: 'merchant', callerId: 'merch_001' };
+
+type CustomerRow = { id: string };
+type TransactionRow = { id: string; customerId: string; merchantId: string; status: string };
+
+function rowsOf<T>(result: unknown, label: string): T[] {
+  const data = (result as { data?: unknown } | null)?.data;
+  if (!Array.isArray(data)) {
+    throw new Error(`expected ${label} list, got: ${JSON.stringify(result)}`);
+  }
+  return data as T[];
+}
+
+beforeAll(async () => {
+  const prisma = getPrismaClient();
+
+  await prisma.$connect();
+
+  console.log('✅ Test database connected');
+});
 
 afterAll(async () => {
   await disconnectPrisma();
@@ -18,7 +37,7 @@ describe('Access Control: Role-Based Gating', () => {
 
     const other = await GraphRepository.getCustomer('cust_002', customerCtx);
     expect(other).toEqual({
-      error: 'Access denied: you can only view your own profile.',
+      error: 'Access Denied.',
     });
   });
 
@@ -28,18 +47,22 @@ describe('Access Control: Role-Based Gating', () => {
   });
 
   it('merchant is denied a customer who has not transacted at their store', async () => {
-    const merchantCustomers = await GraphRepository.listCustomers(merchantCtx);
-    const allCustomers = await GraphRepository.listCustomers(adminCtx);
-    if (!('data' in merchantCustomers) || !('data' in allCustomers)) {
-      throw new Error('expected customer lists');
-    }
-    const allowed = new Set(merchantCustomers.data.map((c: { id: string }) => c.id));
-    const outsider = allCustomers.data.find((c: { id: string }) => !allowed.has(c.id));
+    const merchantCustomers = rowsOf<CustomerRow>(
+      await GraphRepository.listCustomers(merchantCtx),
+      'customer',
+    );
+    const allCustomers = rowsOf<CustomerRow>(
+      await GraphRepository.listCustomers(adminCtx),
+      'customer',
+    );
+
+    const allowed = new Set(merchantCustomers.map((c) => c.id));
+    const outsider = allCustomers.find((c) => !allowed.has(c.id));
     expect(outsider).toBeDefined();
 
     const denied = await GraphRepository.getCustomer(outsider!.id, merchantCtx);
     expect(denied).toEqual({
-      error: 'Access denied: this customer has not transacted at your store.',
+      error: 'Access Denied.',
     });
   });
 
@@ -49,61 +72,63 @@ describe('Access Control: Role-Based Gating', () => {
 
     const other = await GraphRepository.getTransaction('txn_002', customerCtx);
     expect(other).toEqual({
-      error: 'Access denied: you can only view your own transactions.',
+      error: 'Access Denied.',
     });
   });
 
   it('merchant cannot view a transaction from another store', async () => {
     const denied = await GraphRepository.getTransaction('txn_002', merchantCtx);
     expect(denied).toEqual({
-      error: 'Access denied: this transaction was not processed at your store.',
+      error: 'Access Denied.',
     });
   });
 
   it('list_transactions is scoped to the caller', async () => {
-    const customerList = await GraphRepository.listTransactions(customerCtx);
-    expect(customerList).toHaveProperty('data');
-    if (!('data' in customerList)) throw new Error('expected transaction list');
-    expect(customerList?.data?.length).toBeGreaterThan(0);
-    expect(customerList?.data?.every((t: { customerId: string }) => t.customerId === 'cust_001')).toBe(true);
+    const customerList = rowsOf<TransactionRow>(
+      await GraphRepository.listTransactions(customerCtx),
+      'transaction',
+    );
+    expect(customerList.length).toBeGreaterThan(0);
+    expect(customerList.every((t) => t.customerId === 'cust_001')).toBe(true);
 
-    const merchantList = await GraphRepository.listTransactions(merchantCtx);
-    expect(merchantList).toHaveProperty('data');
-    if (!('data' in merchantList)) throw new Error('expected transaction list');
-    expect(merchantList?.data?.length).toBeGreaterThan(0);
-    expect(merchantList?.data?.every((t: { merchantId: string }) => t.merchantId === 'merch_001')).toBe(true);
+    const merchantList = rowsOf<TransactionRow>(
+      await GraphRepository.listTransactions(merchantCtx),
+      'transaction',
+    );
+    expect(merchantList.length).toBeGreaterThan(0);
+    expect(merchantList.every((t) => t.merchantId === 'merch_001')).toBe(true);
   });
 
   it('list_customers is scoped to the caller', async () => {
-    const self = await GraphRepository.listCustomers(customerCtx);
-    expect(self).toHaveProperty('data');
-    if (!('data' in self)) throw new Error('expected customer list');
-    expect(self.data.map((c: { id: string }) => c.id)).toEqual(['cust_001']);
+    const self = rowsOf<CustomerRow>(
+      await GraphRepository.listCustomers(customerCtx),
+      'customer',
+    );
+    expect(self.map((c) => c.id)).toEqual(['cust_001']);
 
-    const store = await GraphRepository.listCustomers(merchantCtx);
-    expect(store).toHaveProperty('data');
-    if (!('data' in store)) throw new Error('expected customer list');
-    expect(store.data.length).toBeGreaterThan(0);
-    expect(store.data.some((c: { id: string }) => c.id === 'cust_001')).toBe(true);
+    const store = rowsOf<CustomerRow>(
+      await GraphRepository.listCustomers(merchantCtx),
+      'customer',
+    );
+    expect(store.length).toBeGreaterThan(0);
+    expect(store.some((c) => c.id === 'cust_001')).toBe(true);
   });
 
   it('admin can filter transactions by status without leaking across roles', async () => {
-    const completed = await GraphRepository.listTransactions(adminCtx, {
-      status: 'COMPLETED',
-    });
-    expect(completed).toHaveProperty('data');
-    if (!('data' in completed)) throw new Error('expected transaction list');
-    expect(completed?.data?.length).toBeGreaterThan(0);
-    expect(completed?.data?.every((t: { status: string }) => t.status === 'COMPLETED')).toBe(true);
+    const completed = rowsOf<TransactionRow>(
+      await GraphRepository.listTransactions(adminCtx, { status: 'COMPLETED' }),
+      'transaction',
+    );
+    expect(completed.length).toBeGreaterThan(0);
+    expect(completed.every((t) => t.status === 'COMPLETED')).toBe(true);
 
-    const customerCompleted = await GraphRepository.listTransactions(customerCtx, {
-      status: 'COMPLETED',
-    });
-    if (!('data' in customerCompleted)) throw new Error('expected transaction list');
+    const customerCompleted = rowsOf<TransactionRow>(
+      await GraphRepository.listTransactions(customerCtx, { status: 'COMPLETED' }),
+      'transaction',
+    );
     expect(
-      customerCompleted?.data?.every(
-        (t: { customerId: string; status: string }) =>
-          t.customerId === 'cust_001' && t.status === 'COMPLETED',
+      customerCompleted.every(
+        (t) => t.customerId === 'cust_001' && t.status === 'COMPLETED',
       ),
     ).toBe(true);
   });

@@ -16,10 +16,10 @@ build/
 *.tsbuildinfo
 
 # Data directory
-data/
+/data/
 
 # Example file
-example.ts
+/example.ts
 
 # Test and coverage
 coverage/

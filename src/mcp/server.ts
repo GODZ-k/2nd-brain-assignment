@@ -39,7 +39,7 @@ export function createMcpServer(context: CallerContext): McpServer {
       }),
     },
     async ({ customerId }) =>
-      run(() => GraphRepository.getCustomer(customerId, context)),
+      run(() => GraphRepository.getCustomer(customerId, context, "get_customer")),
   );
 
   server.registerTool(
@@ -52,7 +52,7 @@ export function createMcpServer(context: CallerContext): McpServer {
       }),
     },
     async ({ merchantId }) =>
-      run(() => GraphRepository.getMerchant(merchantId, context)),
+      run(() => GraphRepository.getMerchant(merchantId, context, "get_merchant")),
   );
 
   server.registerTool(
@@ -65,7 +65,7 @@ export function createMcpServer(context: CallerContext): McpServer {
       }),
     },
     async ({ transactionId }) =>
-      run(() => GraphRepository.getTransaction(transactionId, context)),
+      run(() => GraphRepository.getTransaction(transactionId, context, "get_transaction")),
   );
 
   server.registerTool(
@@ -94,7 +94,7 @@ export function createMcpServer(context: CallerContext): McpServer {
           customerId,
           merchantId,
           status,
-        }),
+        }, "list_transactions"),
       ),
   );
 
@@ -104,7 +104,7 @@ export function createMcpServer(context: CallerContext): McpServer {
       description:
         'List customers. Customers see only themselves. Merchants see customers who bought at their store. Admins see all customers.',
     },
-    async () => run(() => GraphRepository.listCustomers(context)),
+    async () => run(() => GraphRepository.listCustomers(context, "list_customers")),
   );
 
   server.registerTool(

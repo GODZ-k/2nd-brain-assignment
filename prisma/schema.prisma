@@ -32,13 +32,14 @@ model Merchant {
 }
 
 model Transaction {
-  id         String   @id
-  customerId String
-  merchantId String
-  amount     Float
-  currency   String
-  status     String // COMPLETED | PENDING | DECLINED
-  createdAt  DateTime @default(now())
+  id           String   @id
+  customerId   String
+  merchantId   String
+  amount       Float
+  currency     String
+  status       String // COMPLETED | PENDING | DECLINED
+  createdAt    DateTime @default(now())
+  internalNote String?
 
   customer Customer @relation(fields: [customerId], references: [id])
   merchant Merchant @relation(fields: [merchantId], references: [id])
@@ -46,4 +47,41 @@ model Transaction {
   @@index([customerId])
   @@index([merchantId])
   @@map("transactions")
+}
+
+enum AuditAction {
+  READ
+  LIST
+}
+
+enum AuditDecision {
+  ALLOWED
+  DENIED
+}
+
+model AuditLog {
+  id           String        @id @default(cuid())
+  callerId     String
+  callerRole   String
+  action       AuditAction
+  resourceType String
+  resourceId   String?
+  decision     AuditDecision
+  reason       String?
+  toolName     String?
+  requestId    String?
+  // Additional field
+  metadata     Json?
+
+  // Optional: which fields were exposed/hidden
+  fields Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([callerId])
+  @@index([callerRole])
+  @@index([resourceType, resourceId])
+  @@index([decision])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

@@ -64,6 +64,7 @@ export async function runIngestionPipeline(
         currency: t.currency,
         status: t.status,
         createdAt: new Date(t.createdAt),
+        internalNote: t.internalNote
       },
     });
     ok++;

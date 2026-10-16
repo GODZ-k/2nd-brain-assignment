@@ -2,6 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import { faker } from '@faker-js/faker';
 
+const internalNotes = [
+  'VIP customer - handle with priority',
+  'Manual review required',
+  'High-value transaction',
+  'Customer requested expedited processing',
+  'Fraud screening completed',
+  'Refund eligibility under review',
+  'No additional action required',
+  'Customer has previous declined transactions',
+  'Merchant requested verification',
+  'Internal compliance check completed',
+];
+
 faker.seed(42);
 
 export function generateSyntheticDataset(outputDir = path.resolve(__dirname, '../../data/raw')) {
@@ -49,6 +62,7 @@ export function generateSyntheticDataset(outputDir = path.resolve(__dirname, '..
       currency: currencies[0],
       status: statuses[i % statuses.length],
       createdAt: faker.date.recent({ days: 60 }).toISOString(),
+      internalNote: internalNotes[i % internalNotes.length],
     };
   });
 

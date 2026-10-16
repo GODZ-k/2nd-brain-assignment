@@ -2,14 +2,36 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "**" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-and-lint:
     name: Build, Lint & Automated Gating Tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
 
     steps:
       - name: Checkout Code
@@ -26,8 +48,6 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy?schema=public"
 
       - name: Type Check
         run: npx tsc --noEmit
@@ -35,7 +55,14 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
+      - name: Create Database Schema
+        run: npx prisma db push
+
+      - name: Seed Test Data
+        run: |
+          npm run data:generate
+          npm run data:ingest
+
       - name: Run Automated Gating & Policy Tests
         run: npm test
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy?schema=public"
+       

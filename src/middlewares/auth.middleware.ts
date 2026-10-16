@@ -16,8 +16,9 @@ export function authenticate(req: Request): CallerContext | null {
   const match = /^Bearer\s+(.+)$/i.exec(header);
   if (!match) return null;
   const presented = match[1];
+  const identities = loadIdentities()
 
-  for (const id of loadIdentities()) {
+  for (const id of identities) {
     if (id.token && safeEqual(presented, id.token)) {
       return { role: id.role, callerId: id.callerId };
     }

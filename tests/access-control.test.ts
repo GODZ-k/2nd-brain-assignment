@@ -64,14 +64,14 @@ describe('Access Control: Role-Based Gating', () => {
     const customerList = await GraphRepository.listTransactions(customerCtx);
     expect(customerList).toHaveProperty('data');
     if (!('data' in customerList)) throw new Error('expected transaction list');
-    expect(customerList.data.length).toBeGreaterThan(0);
-    expect(customerList.data.every((t: { customerId: string }) => t.customerId === 'cust_001')).toBe(true);
+    expect(customerList?.data?.length).toBeGreaterThan(0);
+    expect(customerList?.data?.every((t: { customerId: string }) => t.customerId === 'cust_001')).toBe(true);
 
     const merchantList = await GraphRepository.listTransactions(merchantCtx);
     expect(merchantList).toHaveProperty('data');
     if (!('data' in merchantList)) throw new Error('expected transaction list');
-    expect(merchantList.data.length).toBeGreaterThan(0);
-    expect(merchantList.data.every((t: { merchantId: string }) => t.merchantId === 'merch_001')).toBe(true);
+    expect(merchantList?.data?.length).toBeGreaterThan(0);
+    expect(merchantList?.data?.every((t: { merchantId: string }) => t.merchantId === 'merch_001')).toBe(true);
   });
 
   it('list_customers is scoped to the caller', async () => {
@@ -93,15 +93,15 @@ describe('Access Control: Role-Based Gating', () => {
     });
     expect(completed).toHaveProperty('data');
     if (!('data' in completed)) throw new Error('expected transaction list');
-    expect(completed.data.length).toBeGreaterThan(0);
-    expect(completed.data.every((t: { status: string }) => t.status === 'COMPLETED')).toBe(true);
+    expect(completed?.data?.length).toBeGreaterThan(0);
+    expect(completed?.data?.every((t: { status: string }) => t.status === 'COMPLETED')).toBe(true);
 
     const customerCompleted = await GraphRepository.listTransactions(customerCtx, {
       status: 'COMPLETED',
     });
     if (!('data' in customerCompleted)) throw new Error('expected transaction list');
     expect(
-      customerCompleted.data.every(
+      customerCompleted?.data?.every(
         (t: { customerId: string; status: string }) =>
           t.customerId === 'cust_001' && t.status === 'COMPLETED',
       ),
@@ -111,7 +111,7 @@ describe('Access Control: Role-Based Gating', () => {
 
 describe('Validation: Zod Schemas', () => {
   it('rejects customer with invalid email', async () => {
-    const { validateRecord, CustomerSchema } = await import('@/ingestion/validator');
+    const { validateRecord, CustomerSchema } = await import('@/ingestion/validator.js');
     const result = validateRecord(CustomerSchema, {
       id: 'cust_bad',
       name: 'Bad User',
@@ -123,7 +123,7 @@ describe('Validation: Zod Schemas', () => {
   });
 
   it('rejects transaction with negative amount', async () => {
-    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator');
+    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator.js');
     const result = validateRecord(TransactionSchema, {
       id: 'txn_bad',
       customerId: 'cust_001',
@@ -138,7 +138,7 @@ describe('Validation: Zod Schemas', () => {
   });
 
   it('accepts a valid transaction record', async () => {
-    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator');
+    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator.js');
     const result = validateRecord(TransactionSchema, {
       id: 'txn_001',
       customerId: 'cust_001',
@@ -153,7 +153,7 @@ describe('Validation: Zod Schemas', () => {
   });
 
   it('rejects transaction with invalid status enum', async () => {
-    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator');
+    const { validateRecord, TransactionSchema } = await import('@/ingestion/validator.js');
     const result = validateRecord(TransactionSchema, {
       id: 'txn_bad',
       customerId: 'cust_001',
@@ -169,7 +169,7 @@ describe('Validation: Zod Schemas', () => {
 
 describe('Data Generator', () => {
   it('generates correct counts of merchants, customers, transactions', async () => {
-    const { generateSyntheticDataset } = await import('@/data/generator');
+    const { generateSyntheticDataset } = await import('@/data/generator.js');
     const tmpDir = './data/test_tmp';
     const result = generateSyntheticDataset(tmpDir);
 

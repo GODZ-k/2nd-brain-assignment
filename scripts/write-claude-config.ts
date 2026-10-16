@@ -170,7 +170,7 @@ function claudeConfigPath(): string {
   return path.join(os.homedir(), '.config/Claude/claude_desktop_config.json');
 }
 
-function readJsonFile(filePath: string): Record<string, any> {
+function readJsonFile(filePath: string): Record<string, unknown> {
   // PowerShell Set-Content -Encoding utf8 writes a BOM; strip it before parse.
   const raw = fs.readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '');
   if (!raw.trim()) return {};
@@ -274,7 +274,9 @@ function buildHttpEntry(url: string, token: string): ServerEntry {
 // ---------------------------------------------------------------------------
 
 // stdio: start the server like Claude Desktop would and send `initialize`
-function smokeTestStdio(entry: ServerEntry, timeoutMs = 25000): Promise<{ ok: boolean; detail: string }> {
+function smokeTestStdio(entry: ServerEntry, timeoutMs = 25000): Promise<{
+  warn: unknown; ok: boolean; detail: string
+}> {
   return new Promise((resolve) => {
     const child = spawn(entry.command, entry.args, {
       cwd: os.tmpdir(), // not the project folder, same as Claude Desktop
@@ -285,7 +287,6 @@ function smokeTestStdio(entry: ServerEntry, timeoutMs = 25000): Promise<{ ok: bo
     let buffer = '';
     let stderr = '';
     let done = false;
-    let timer: NodeJS.Timeout;
 
     const tail = () => stderr.trim().split('\n').slice(-6).join('\n');
     const finish = (ok: boolean, detail: string) => {
@@ -293,10 +294,10 @@ function smokeTestStdio(entry: ServerEntry, timeoutMs = 25000): Promise<{ ok: bo
       done = true;
       clearTimeout(timer);
       child.kill();
-      resolve({ ok, detail });
+      resolve({ warn: null, ok, detail });
     };
 
-    timer = setTimeout(
+    const timer = setTimeout(
       () => finish(false, `no response within ${timeoutMs / 1000}s\n${tail()}`),
       timeoutMs,
     );
@@ -391,14 +392,15 @@ async function main() {
   const opts = parseOptions();
   const configPath = opts.configPath ?? claudeConfigPath();
 
-  let existing: Record<string, any> = {};
+  let existing: Record<string, unknown> = {};
   const fileExists = fs.existsSync(configPath);
   if (fileExists) {
     try {
       existing = readJsonFile(configPath);
-    } catch (err) {
+    } catch (err: unknown) {
       throw new Error(
         `Existing config is not valid JSON, refusing to overwrite it:\n  ${configPath}\n${(err as Error).message}`,
+        { cause: err },
       );
     }
   }

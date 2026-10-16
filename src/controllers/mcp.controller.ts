@@ -28,9 +28,9 @@ class MCPController {
                 });
             }
         }
-    }
+    };
 
-    static async NotAllowed(_req: Request, res: Response) {
+    static async NotAllowed(_req: AuthedRequest, res: Response) {
         return res.status(405).set('Allow', 'POST').json({
             jsonrpc: '2.0',
             error: { code: -32000, message: 'Method not allowed' },

@@ -15,6 +15,12 @@ dist/
 build/
 *.tsbuildinfo
 
+# Data directory
+data/
+
+# Example file
+example.ts
+
 # Test and coverage
 coverage/
 .nyc_output/

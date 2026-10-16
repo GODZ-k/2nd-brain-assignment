@@ -10,13 +10,13 @@ async function run(fn: () => Promise<unknown> | unknown): Promise<CallToolResult
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       isError: true,
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ error: err?.message || String(err) }, null, 2),
+          text: JSON.stringify({ error: err instanceof Error ? err.message : String(err) }, null, 2),
         },
       ],
     };

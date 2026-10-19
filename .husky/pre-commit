@@ -1,2 +1,8 @@
+# Never commit .env
+if git diff --cached --name-only | grep -Eq '(^|/)\.env$'; then
+  echo "Refusing to commit .env"
+  exit 1
+fi
+
+npx lint-staged
 npm run type-check
-npm run lint 

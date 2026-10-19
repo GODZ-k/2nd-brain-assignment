@@ -7,7 +7,6 @@
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "prisma:generate": "prisma generate",
     "prisma:db:push": "prisma db push",
     "prisma:db:migrate": "prisma migrate dev",
@@ -22,6 +21,9 @@
     "test:watch": "vitest",
     "claude:config": "tsx scripts/write-claude-config.ts",
     "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,mjs}": "eslint --fix"
   },
   "license": "ISC",
   "dependencies": {

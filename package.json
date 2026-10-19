@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
     "prisma:generate": "prisma generate",
     "prisma:db:push": "prisma db push",
     "prisma:db:migrate": "prisma migrate dev",
@@ -22,9 +23,9 @@
     "claude:config": "tsx scripts/write-claude-config.ts",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,mjs}": "eslint --fix"
-  },
+"lint-staged": {
+  "*.{ts,mjs}": "eslint --fix --max-warnings 0"
+},  
   "license": "ISC",
   "dependencies": {
     "@faker-js/faker": "^9.5.0",

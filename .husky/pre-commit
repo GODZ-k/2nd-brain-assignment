@@ -1,8 +1,8 @@
-# Never commit .env
-if git diff --cached --name-only | grep -Eq '(^|/)\.env$'; then
-  echo "Refusing to commit .env"
+# Never commit .env files (but allow .env.example)
+if git diff --cached --name-only | grep -E '(^|/)\.env(\.[^/]+)?$' | grep -vq '\.example$'; then
+  echo "Refusing to commit a .env file"
   exit 1
 fi
 
-npx lint-staged
+npx lint-staged    
 npm run type-check

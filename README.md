@@ -309,13 +309,9 @@ The following variables are used by the application or described by the current 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string. |
-| `MCP_ROLE` | Default stdio role, if supported by the current entry point. |
-| `MCP_CALLER_ID` | Default stdio caller ID, if supported by the current entry point. |
-| `MCP_TOKEN_ADMIN` | Bearer token mapped to the admin identity for HTTP. |
-| `MCP_TOKEN_MERCHANT` | Bearer token mapped to the configured merchant identity. |
-| `MCP_TOKEN_CUSTOMER` | Bearer token mapped to the configured customer identity. |
-| `MCP_MERCHANT_ID` | Merchant ID associated with `MCP_TOKEN_MERCHANT`. |
-| `MCP_CUSTOMER_ID` | Customer ID associated with `MCP_TOKEN_CUSTOMER`. |
+| `MCP_ROLE` | Default stdio and http role, if supported by the current entry point. |
+| `MCP_CALLER_ID` | Default stdio and http caller ID, if supported by the current entry point. |
+| `MCP_TOKEN` | Bearer token mapped to the identity for HTTP. |
 | `HOST` | HTTP bind host, if configured by the environment loader. |
 | `PORT` | HTTP listen port, if configured by the environment loader. |
 
@@ -385,7 +381,7 @@ After updating the configuration:
 
 1. Fully quit Claude Desktop, including its tray/background process.
 2. Reopen Claude Desktop.
-3. Select the configured MCP server.
+3. Select the configured MCP server ( make sure you activate the developer option from the navigation ).
 4. Call `whoami` to confirm the role and caller ID.
 5. Test the role's allowed and denied operations.
 

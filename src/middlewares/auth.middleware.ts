@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express"
-import { loadIdentities } from "@/config/identify"
+import { loadIdentity } from "@/config/identify"
 import { CallerContext } from "@/types"
 import { timingSafeEqual } from "node:crypto";
 
@@ -11,17 +11,21 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
+const extractToken = (header:string): string | null => {
+  const match = header.match(/^Bearer\s+(.+)$/i)
+  return match ? match[1] : null
+}
+
 export function authenticate(req: Request): CallerContext | null {
   const header = req.get('authorization') ?? '';
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  if (!match) return null;
-  const presented = match[1];
-  const identities = loadIdentities()
 
-  for (const id of identities) {
-    if (id.token && safeEqual(presented, id.token)) {
-      return { role: id.role, callerId: id.callerId };
-    }
+  const presented = extractToken(header)
+  if(!presented)  return null
+
+  const identity = loadIdentity()
+
+  if (identity.token && safeEqual(presented, identity.token)) {
+    return { role: identity.role, callerId: identity.callerId };
   }
   return null;
 }

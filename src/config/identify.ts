@@ -8,20 +8,8 @@ interface Identity {
     callerId: string;
 }
 
-export function loadIdentities(): Identity[] {
+export function loadIdentity(): Identity {
     const env = loadConfig()
-    const candidates: { token: string; role: UserRole; callerId: string }[] = [
-        { token: env.MCP_TOKEN_ADMIN, role: 'admin', callerId: 'admin' },
-        {
-            token: env.MCP_TOKEN_MERCHANT,
-            role: 'merchant',
-            callerId: env.MCP_MERCHANT_ID,
-        },
-        {
-            token: env.MCP_TOKEN_CUSTOMER,
-            role: 'customer',
-            callerId: env.MCP_CUSTOMER_ID,
-        },
-    ];
-    return candidates.filter((c): c is Identity => !!c.token);
+    const candidates: { token: string; role: UserRole; callerId: string } =  { token: env.MCP_TOKEN, role: env.MCP_ROLE as UserRole, callerId: env.MCP_CALLER_ID }
+    return candidates
 }

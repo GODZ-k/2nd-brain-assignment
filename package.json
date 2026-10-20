@@ -23,11 +23,12 @@
     "claude:config": "tsx scripts/write-claude-config.ts",
     "prepare": "husky"
   },
-"lint-staged": {
-  "*.{ts,mjs}": "eslint --fix --max-warnings 0"
-},  
+  "lint-staged": {
+    "*.{ts,mjs}": "eslint --fix --max-warnings 0"
+  },
   "license": "ISC",
   "dependencies": {
+    "@clerk/express": "^2.1.80",
     "@faker-js/faker": "^9.5.0",
     "@modelcontextprotocol/express": "^2.0.2",
     "@modelcontextprotocol/node": "^2.1.1",

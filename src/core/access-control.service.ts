@@ -73,17 +73,17 @@ export class AccessControlService {
                 reason: 'Admin has full customer access.',
             };
         }
-
+        
         if (ctx.role === 'customer') {
             if (ctx.callerId !== customerId) {
                 return {
                     allowed: false,
                     reason: 'Customer can only access their own profile.',
-                };
+                }; 
             }
 
             return {
-                allowed: true,
+                allowed: true,    
                 reason: 'Customer is accessing their own profile.',
             };
         }

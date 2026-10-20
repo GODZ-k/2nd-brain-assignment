@@ -12,3 +12,5 @@ export interface TransactionFilters {
   merchantId?: string;
   status?: TransactionStatus;
 }
+
+export type AuthedRequest = Request & { mcpContext?: CallerContext }

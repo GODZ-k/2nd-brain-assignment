@@ -1,6 +1,6 @@
 import { createMcpServer } from "@/mcp/server";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node"
-import { AuthedRequest } from "@/middlewares/auth.middleware"
+import { AuthedRequest } from "@/types"
 import { Response } from "express"
 
 class MCPController {

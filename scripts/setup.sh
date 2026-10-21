@@ -55,15 +55,12 @@ fi
 echo ""
 echo "✅ Database connection successful."
 
-echo ""
-echo "Generate Mock data"
-npm run data:generate
 
 sleep 2
 
 echo ""
 echo "Ingenst into database"
-npm run data:ingest
+npm run ingest:pdf -- ./data/raw/financial_knowledge_graph_sample.pdf
 
 sleep 2
 

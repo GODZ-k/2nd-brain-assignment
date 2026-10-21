@@ -14,6 +14,10 @@ function toProperties(value: unknown,): Record<string, unknown> {
     return {};
 }
 
+type GraphEntity = NonNullable<
+    Awaited<ReturnType<KnowledgeGraphRepository['getEntity']>>
+>;
+
 export class GraphTraversal {
     constructor(
         private readonly repository: KnowledgeGraphRepository,
@@ -21,33 +25,39 @@ export class GraphTraversal {
     ) { }
 
     async traverse(startEntityId: string, context: CallerContext, options: GraphTraversalOptions): Promise<GraphTraversalResult> {
-        const nodes = [];
-        const edges = [];
+        const nodes: GraphTraversalResult['nodes'] = [];
+        const edges: GraphTraversalResult['edges'] = [];
 
         const visited = new Set<string>();
+        const authorizedEntities = new Map<string, GraphEntity>();
+        const startEntity = await this.repository.getEntity(startEntityId);
 
-        const queue: Array<{ entityId: string; depth: number; }> = [
+        if (!startEntity || !this.accessPolicy.canReadEntity(startEntity, context)) {
+            return { nodes, edges };
+        }
+
+        authorizedEntities.set(startEntity.id, startEntity)
+
+        const queue: Array<{ entity: GraphEntity; depth: number; }> = [
             {
-                entityId: startEntityId,
+                entity: startEntity,
                 depth: 0,
             },
         ];
 
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            if (visited.has(current.entityId)) {
+        let head = 0;
+
+        while (head < queue.length) {
+            const current = queue[head++];
+
+            if (visited.has(current.entity.id)) {
                 continue;
             }
-            visited.add(current.entityId);
-            const entity = await this.repository.getEntity(current.entityId,);
-            
-            if (!entity) {
-                continue;
-            }
+
+            visited.add(current.entity.id);
 
             // AUTHORIZATION CHECK 1 - Can this caller see this node?
-
-            const canRead = this.accessPolicy.canReadEntity(entity, context);
+            const canRead = this.accessPolicy.canReadEntity(current.entity, context);
 
             if (!canRead) {
                 continue;
@@ -55,10 +65,10 @@ export class GraphTraversal {
 
             nodes.push({
                 entity: {
-                    id: entity.id,
-                    type: entity.type,
-                    name: entity.name,
-                    properties: toProperties(entity.properties),
+                    id: current.entity.id,
+                    type: current.entity.type,
+                    name: current.entity.name,
+                    properties: toProperties(current.entity.properties),
                 },
                 depth: current.depth,
             });
@@ -67,15 +77,11 @@ export class GraphTraversal {
                 continue;
             }
 
-            const { outgoing: relations } =
-                await this.repository.getNeighbors(
-                    entity.id,
-                );
+            const { outgoing: relations } = await this.repository.getNeighbors(current.entity.id);
+
 
             for (const relation of relations) {
-
                 // AUTHORIZATION CHECK 2 - Can this caller follow this edge?
-
                 const canFollow = this.accessPolicy.canFollowRelation(relation, context);
 
                 if (!canFollow) {
@@ -107,10 +113,14 @@ export class GraphTraversal {
                     relationType: relation.relationType,
                 });
 
-                queue.push({
-                    entityId: relation.targetId,
-                    depth: current.depth + 1,
-                });
+                authorizedEntities.set(target.id, target);
+
+                if (!visited.has(target.id)) {
+                    queue.push({
+                        entity: authorizedEntities.get(target.id)!,
+                        depth: current.depth + 1,
+                    });
+                }
             }
         }
 

@@ -131,10 +131,15 @@ src/
 ├── config/
 │   ├── identify.ts
 │   └── prisma.ts
+│   └── env.ts
 │
 ├── core/
 │   └── knowledge-graph.service.ts
-│
+|   └── audit.service.ts
+|    
+│── controllers/
+│   └── mcp.controller.ts
+|
 ├── graph/
 │   ├── access.policy.ts
 │   ├── graph.traversal.ts
@@ -153,7 +158,10 @@ src/
 ├── mcp/
 │   ├── server.ts
 │   └── tools.ts
-│
+|
+├── middleware/
+│   ├── ath.middleware.ts
+|
 ├── types/
 │   └── index.ts
 │
@@ -719,14 +727,24 @@ Do not commit secrets to Git.
 
 ---
 
-# Installation
-
+# Installation 
 Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd <project-directory>
+git clone https://github.com/GODZ-k/2nd-brain-assignment
+cd 2nd-brain-assignment
 ```
+## Method 1
+
+Run the bash script to setup the entire project:
+
+```bash
+bash ./scripts/setup.sh
+```
+make sure the file have execute permission
+
+
+## Method 2
 
 Install dependencies:
 
@@ -779,7 +797,7 @@ The project contains an ingestion entry point that accepts a PDF path.
 Example:
 
 ```bash
-npm run ingest:pdf -- ./data/sample.pdf
+npm run ingest:pdf -- ./data/raw/financial_knowledge_graph_sample.pdf
 ```
 
 The ingestion process will:

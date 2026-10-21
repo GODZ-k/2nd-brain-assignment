@@ -2,7 +2,7 @@ import z from "zod";
 import { accessPolicySchema, accessVisibility, entitySchema, knowledgeSchema, propertiesSchema, relationSchema } from "./validations";
 
 
-export type UserRole = 'admin' | 'merchant' | 'customer';
+export type UserRole = 'admin' | 'user' | 'manager' | 'analyst';
 
 export interface CallerContext {
   role: UserRole;
@@ -34,7 +34,12 @@ export interface GraphTraversalOptions {
 }
 
 export type TraversedNode = {
-  entity: Pick<ExtractedEntity,'id' | 'type' | 'name'>;
+  entity: {
+    id: string,
+    type: string,
+    name: string,
+    properties: Record<string, unknown>
+  }
   depth: number;
 };
 
@@ -47,7 +52,7 @@ export type GraphRelation = ExtractedRelation & {
   accessPolicy: ExtractedAccessPolicy;
 };
 
-export type TraversedRelation = Pick< ExtractedRelation,'id' | 'sourceId' | 'targetId' | 'relationType'>
+export type TraversedRelation = Pick<ExtractedRelation, 'id' | 'sourceId' | 'targetId' | 'relationType'>
 
 export interface GraphTraversalResult {
   nodes: TraversedNode[];

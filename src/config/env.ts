@@ -14,6 +14,8 @@ export function loadConfig() {
     MCP_TOKEN: process.env.MCP_TOKEN!,
     MCP_CALLER_ID: process.env.MCP_CALLER_ID!,
     MCP_ROLE: process.env.MCP_ROLE!,
-    host: "127.0.0.1"
+    host: "127.0.0.1",
+    GROQ_API_KEY:process.env.GROQ_API_KEY!,
+    GROQ_MODEL:process.env.GROQ_MODEL!
   };
 }

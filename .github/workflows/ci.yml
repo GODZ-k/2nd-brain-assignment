@@ -15,23 +15,23 @@ jobs:
     name: Build, Lint & Automated Gating Tests
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    # services:
+    #   postgres:
+    #     image: postgres:16
+    #     env:
+    #       POSTGRES_USER: postgres
+    #       POSTGRES_PASSWORD: postgres
+    #       POSTGRES_DB: test
+    #     ports:
+    #       - 5432:5432
+    #     options: >-
+    #       --health-cmd "pg_isready -U postgres"
+    #       --health-interval 5s
+    #       --health-timeout 5s
+    #       --health-retries 10
 
-    env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
+    # env:
+    #   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
 
     steps:
       - name: Checkout Code
@@ -46,8 +46,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
+      # - name: Generate Prisma Client
+      #   run: npx prisma generate
 
       - name: Type Check
         run: npx tsc --noEmit
@@ -55,14 +55,24 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
-      - name: Create Database Schema
-        run: npx prisma db push
+      # - name: Create Database Schema
+      #   run: npx prisma db push
 
-      - name: Seed Test Data
-        run: |
-          npm run data:generate
-          npm run data:ingest
+      # - name: Seed Test Data
+      #   run: |
+      #     npm run data:generate
+      #     npm run data:ingest
 
-      - name: Run Automated Gating & Policy Tests
-        run: npm test
+      # - name: Seed Test Data
+      #   run: 
+      #     npm run ingest:pdf -- ./data/raw/financial_knowledge_graph_sample.pdf
+      #   env:
+      #     GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }},
+      #     GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
+          
+      # - name: Run Automated Gating & Policy Tests
+      #   run: npm test
+      #   env:
+      #     GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      #     GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
        

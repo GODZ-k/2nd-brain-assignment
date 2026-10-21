@@ -1,4 +1,4 @@
-import { disconnectPrisma } from '@/graph/client';
+import { disconnectPrisma } from '@/config/prisma';
 
 export function onShutdown(cleanup: () => Promise<void> | void) {
     let shuttingDown = false;

@@ -4,7 +4,7 @@ import { loadConfig } from '@/config/env';
 import { CallerContext, UserRole } from '@/types';
 import { fatal, onShutdown } from './utils/lifecycle';
 
-const VALID_ROLES: UserRole[] = ['admin', 'merchant', 'customer'];
+const VALID_ROLES: UserRole = 'admin';
 
 function parseArgs(): CallerContext {
   const config = loadConfig();
@@ -18,7 +18,7 @@ function parseArgs(): CallerContext {
       const val = arg.slice('--role='.length) as UserRole;
       if (!VALID_ROLES.includes(val)) {
         throw new Error(
-          `Invalid --role "${val}". Expected one of: ${VALID_ROLES.join(', ')}`,
+          `Invalid --role "${val}". Expected one of: ${VALID_ROLES}`,
         );
       }
       role = val;

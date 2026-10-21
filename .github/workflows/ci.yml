@@ -58,11 +58,15 @@ jobs:
       - name: Create Database Schema
         run: npx prisma db push
 
+      # - name: Seed Test Data
+      #   run: |
+      #     npm run data:generate
+      #     npm run data:ingest
+
       - name: Seed Test Data
         run: |
-          npm run data:generate
-          npm run data:ingest
-
+          npm run ingest:pdf -- ./data/raw/financial_knowledge_graph_sample.pdf
+          
       - name: Run Automated Gating & Policy Tests
         run: npm test
        

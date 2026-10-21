@@ -21,20 +21,24 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "claude:config": "tsx scripts/write-claude-config.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ingest:pdf": "tsx scripts/ingest-pdf.ts"
   },
-"lint-staged": {
-  "*.{ts,mjs}": "eslint --fix --max-warnings 0"
-},  
+  "lint-staged": {
+    "*.{ts,mjs}": "eslint --fix --max-warnings 0"
+  },
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/groq": "^4.0.66",
     "@faker-js/faker": "^9.5.0",
     "@modelcontextprotocol/express": "^2.0.2",
     "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "@prisma/client": "^6.4.1",
+    "ai": "^7.0.146",
     "dotenv": "^16.4.7",
     "express": "^5.3.0",
+    "pdf-parse": "^2.4.5",
     "zod": "^4.2.0"
   },
   "devDependencies": {

@@ -7,48 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Customer {
-  id        String   @id
-  name      String
-  email     String   @unique
-  phone     String
-  createdAt DateTime @default(now())
-
-  transactions Transaction[]
-
-  @@map("customers")
-}
-
-model Merchant {
-  id           String   @id
-  businessName String   @unique
-  category     String
-  email        String   @unique
-  createdAt    DateTime @default(now())
-
-  transactions Transaction[]
-
-  @@map("merchants")
-}
-
-model Transaction {
-  id           String   @id
-  customerId   String
-  merchantId   String
-  amount       Float
-  currency     String
-  status       String // COMPLETED | PENDING | DECLINED
-  createdAt    DateTime @default(now())
-  internalNote String?
-
-  customer Customer @relation(fields: [customerId], references: [id])
-  merchant Merchant @relation(fields: [merchantId], references: [id])
-
-  @@index([customerId])
-  @@index([merchantId])
-  @@map("transactions")
-}
-
 enum AuditAction {
   READ
   LIST
@@ -84,4 +42,72 @@ model AuditLog {
   @@index([decision])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+
+model Document {
+  id          String   @id
+  name        String
+  sourceType  String
+  contentHash String @unique
+  createdAt   DateTime @default(now())
+
+  chunks  DocumentChunk[]
+  entities Entity[]
+
+  @@index([sourceType])
+}
+
+model DocumentChunk {
+  id         String   @id
+  documentId String
+  content    String
+  chunkIndex Int
+
+  document Document @relation( fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model Entity {
+  id         String   @id
+  type       String
+  name       String
+  properties Json?
+  
+  documentId String
+
+  accessPolicy Json?
+
+  document Document? @relation(fields: [documentId],references: [id],onDelete: SetNull)
+
+  outgoingRelations GraphRelation[] @relation("SourceEntity")
+  incomingRelations GraphRelation[] @relation("TargetEntity")
+
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([name])
+  @@index([documentId])
+}
+
+model GraphRelation {
+  id           String @id
+  sourceId     String
+  targetId     String
+  relationType String
+
+  properties Json?
+  accessPolicy Json?
+
+  source Entity @relation("SourceEntity", fields: [sourceId],references: [id],onDelete: Cascade )
+
+  target Entity @relation("TargetEntity",fields: [targetId],references: [id],onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([sourceId])
+  @@index([targetId])
+  @@index([relationType])
+  @@unique([sourceId, targetId, relationType])
 }

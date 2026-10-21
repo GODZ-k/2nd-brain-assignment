@@ -1,9 +1,7 @@
+import "dotenv/config"
 import type { ExtractedKnowledge } from '@/types';
-import { loadConfig } from '@/config/env';
 import { knowledgeSchema } from '@/types/validations';
 import { getPrompt, instructions } from './prompt';
-
-const env = loadConfig();
 
 export class KnowledgeExtractor {
 
@@ -19,12 +17,12 @@ export class KnowledgeExtractor {
 
     const groq = createGroq({
       baseURL: 'https://api.groq.com/openai/v1',
-      apiKey: env.GROQ_API_KEY,
+      apiKey: process.env.GROQ_API_KEY!,
     });
 
     const result =
       await generateText({
-        model: groq(env.GROQ_MODEL),
+        model: groq(process.env.GROQ_MODEL!),
         output: Output.object({
           schema: knowledgeSchema,
         }),

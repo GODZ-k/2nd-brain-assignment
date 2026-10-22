@@ -63,11 +63,7 @@ export class KnowledgeGraphService {
     };
   }
 
-  async searchEntities(
-    query: string,
-    context: CallerContext,
-    type?: string,
-  ) {
+  async searchEntities(query: string,context: CallerContext,type?: string) {
     const accessibleEntities = [];
     let deniedCount = 0;
 

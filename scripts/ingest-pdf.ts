@@ -15,33 +15,16 @@ async function main() {
     );
   }
 
-  const documentRepository =
-    new DocumentRepository();
+  const documentRepository = new DocumentRepository();
+  const knowledgeExtractor = new KnowledgeExtractor();
+  const graphRepository = new KnowledgeGraphRepository();
+  const knowledgeIngestor = new KnowledgeIngestor(graphRepository);
 
-  const knowledgeExtractor =
-    new KnowledgeExtractor();
+  const ingestService = new DocumentIngestionService(documentRepository,knowledgeExtractor,knowledgeIngestor);
 
-  const graphRepository =
-    new KnowledgeGraphRepository();
+  const result = await ingestService.ingestPdf(filePath);
 
-  const knowledgeIngestor =
-    new KnowledgeIngestor(
-      graphRepository,
-    );
-
-  const ingestService =
-    new DocumentIngestionService(
-      documentRepository,
-      knowledgeExtractor,
-      knowledgeIngestor,
-    );
-
-  const result =
-    await ingestService.ingestPdf(filePath);
-
-  console.log(
-    JSON.stringify(result, null, 2),
-  );
+  console.log(JSON.stringify(result, null, 2));
 }
 
 main().catch((error) => {

@@ -38,12 +38,7 @@ export class GraphTraversal {
 
         authorizedEntities.set(startEntity.id, startEntity)
 
-        const queue: Array<{ entity: GraphEntity; depth: number; }> = [
-            {
-                entity: startEntity,
-                depth: 0,
-            },
-        ];
+        const queue: Array<{ entity: GraphEntity; depth: number; }> = [{ entity: startEntity, depth: 0 }];
 
         let head = 0;
 

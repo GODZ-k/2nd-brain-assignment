@@ -1,7 +1,7 @@
-import { z } from 'zod';
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
 import { KnowledgeGraphService } from '@/core/knowledge-graph.service';
 import type { CallerContext } from '@/types';
+import { entityInputSchema, graphTraversalInputSchema, searchEntityInputSchema } from '@/types/validations';
 
 async function run(fn: () => Promise<unknown> | unknown): Promise<CallToolResult> {
     try {
@@ -30,16 +30,9 @@ export function registerKnowledgeGraphTool(
         'traverse_graph',
         {
             description: 'Traverse the knowledge graph from a starting entity. Results are automatically restricted by the caller access policy.',
-            inputSchema: z.object({
-                entityId: z.string().describe('ID of the entity from which graph traversal should start.'),
-                maxDepth: z.number().int().min(0).max(10).default(2).describe('Maximum number of graph edges to traverse.')
-            }),
+            inputSchema: graphTraversalInputSchema,
         },
-        async ({ entityId, maxDepth }) => {
-            return run(() =>
-                service.query(entityId, context, maxDepth),
-            );
-        },
+        async ({ entityId, maxDepth }) =>  run(() => service.query(entityId, context, maxDepth))
     );
 
     server.registerTool(
@@ -54,7 +47,7 @@ export function registerKnowledgeGraphTool(
         'get_entity',
         {
             description: 'Get a knowledge graph entity by ID. Access is controlled by the entity access policy.',
-            inputSchema: z.object({ entityId: z.string().min(1).describe('Knowledge graph entity ID') }),
+            inputSchema: entityInputSchema,
         },
 
         async ({ entityId }) => run(() => service.getEntity(entityId, context)),
@@ -64,10 +57,7 @@ export function registerKnowledgeGraphTool(
         'search_entities',
         {
             description: 'Search knowledge graph entities by name. Only entities the caller is authorized to read are returned.',
-            inputSchema: z.object({
-                query: z.string().min(1).describe('Text to search for in entity names'),
-                type: z.string().optional().describe('Optional entity type filter')
-            }),
+            inputSchema: searchEntityInputSchema,
         },
         async ({ query, type }) => run(() => service.searchEntities(query, context, type)
         ),

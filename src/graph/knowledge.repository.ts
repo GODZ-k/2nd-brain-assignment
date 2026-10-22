@@ -7,9 +7,7 @@ export class KnowledgeGraphRepository {
   private readonly prisma = getPrismaClient()
   constructor() { }
 
-  async createEntity(
-    entity: GraphEntity,
-  ) {
+  async createEntity(entity: GraphEntity) {
     return this.prisma.entity.create({
       data: {
         id: entity.id,
@@ -22,9 +20,7 @@ export class KnowledgeGraphRepository {
     });
   }
 
-  async createRelation(
-    relation: GraphRelation,
-  ) {
+  async createRelation(relation: GraphRelation) {
     return this.prisma.graphRelation.create({
       data: {
         id: relation.id,
@@ -44,35 +40,15 @@ export class KnowledgeGraphRepository {
     });
   }
 
-  async searchEntities(
-    query: string,
-    type?: string,
-  ) {
+  async searchEntities(query: string,type?: string) {
     return this.prisma.entity.findMany({
       where: {
         AND: [
-          type
-            ? {
-              type: {
-                equals: type,
-                mode: 'insensitive',
-              },
-            }
-            : {},
-
-          {
-            name: {
-              contains: query,
-              mode: 'insensitive',
-            },
-          },
+          type ? {type: {equals: type, mode: 'insensitive'}}: {},
+          {name: {contains: query, mode: 'insensitive'}}
         ],
       },
-
-      orderBy: {
-        name: 'asc',
-      },
-
+      orderBy: {name: 'asc'},
       take: 50,
     });
   }
@@ -80,7 +56,7 @@ export class KnowledgeGraphRepository {
   async getRelation(id: string) {
     return this.prisma.graphRelation.findUnique({
       where: { id },
-    });
+    });  
   }
 
   async findEntity(type: string, name: string) {

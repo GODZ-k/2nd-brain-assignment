@@ -73,12 +73,9 @@ QUALITY RULES:
    entities and relations arrays.
 7. Keep the output concise. Include only meaningful entities,
    useful properties, and explicitly supported relationships.
-
 8. Do not repeat facts across properties unnecessarily.
-
 9. Every response must contain both entities and relations arrays,
    even when either array is empty.
-
 10. Prioritize valid, complete JSON over excessive detail.
 
 SECURITY BOUNDARY:
